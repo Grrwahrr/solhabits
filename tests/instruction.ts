@@ -30,3 +30,29 @@ export const newHabit = async (program: Program<Solhabits>, signer: anchor.web3.
 
     return await program.account.habit.fetch(accHabit);
 }
+
+export const castJudgement = async (program: Program<Solhabits>, signer: anchor.web3.Signer, accHabit: anchor.web3.PublicKey, mintAccount: anchor.web3.PublicKey, tokenDestination: anchor.web3.PublicKey, vaultATA: anchor.web3.PublicKey, judgement: boolean, expectedError: String) => {
+    let tx;
+
+    try {
+        tx = await program.methods
+            .castJudgement(judgement)
+            .accounts({
+                judge: signer.publicKey,
+                habit: accHabit,
+                tokenVault: vaultATA,
+                tokenDestination: tokenDestination,
+                tokenMint: mintAccount,
+            })
+            .signers([signer])
+            .rpc();
+    }
+    catch (e) {
+        if (expectedError === "" || !e.toString().includes(expectedError)) {
+            console.log("Error: ", e, " TX: ", tx);
+        }
+        return undefined;
+    }
+
+    return await program.account.habit.fetch(accHabit);
+}

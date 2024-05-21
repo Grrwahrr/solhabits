@@ -9,8 +9,27 @@ import {
 } from "@solana/spl-token";
 import { Solhabits } from "../target/types/solhabits";
 import {deriveHabit} from "./pda";
-import {newHabit} from "./instruction";
+import {castJudgement, newHabit} from "./instruction";
 import { expect } from "chai";
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function wait(program, secs: number) {
+  let currentSlot = await program.provider.connection.getSlot();
+  let currentBlockTime = await program.provider.connection.getBlockTime(currentSlot);
+  let waitUntil = currentBlockTime + secs;
+
+  while (true) {
+    currentSlot = await program.provider.connection.getSlot();
+    currentBlockTime = await program.provider.connection.getBlockTime(currentSlot);
+    if (currentBlockTime > waitUntil) {
+      break;
+    }
+    await sleep(1000);
+  }
+}
 
 describe("solhabits", () => {
   // Configure the client to use the local cluster.
@@ -76,4 +95,18 @@ describe("solhabits", () => {
     let habitOne = await newHabit(program, accBob, bobHabit1, mintAccount, bobATA.address, vaultATA, new anchor.BN(1000), habitOneTitle, accCharlie.publicKey, accBob.publicKey, accCharityOne.publicKey, new anchor.BN(deadlineTime));
     expect(habitOne).to.not.be.undefined;
   });
+
+  it("Charlie can judge on Bobs habit, but Alice can't", async () => {
+    // Have to wait here until the delay passes
+    await wait(program, 2);
+
+    let habitOneFails = await castJudgement(program, accAlice, bobHabit1, mintAccount, bobATA.address, vaultATA, true, "A raw constraint was violated");
+
+    let habitOne = await castJudgement(program, accCharlie, bobHabit1, mintAccount, bobATA.address, vaultATA, true, "");
+    console.log(habitOne);
+    expect(habitOne).to.not.be.undefined;
+    expect(habitOne.outcome).to.be.true;
+  });
+
+  //TODO negative tests
 });
