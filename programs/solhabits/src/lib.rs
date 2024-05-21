@@ -36,4 +36,9 @@ pub mod solhabits {
     pub fn cast_judgement(ctx: Context<CastJudgement>, result: bool) -> Result<()> {
         handle_cast_judgement(ctx, result)
     }
+
+    #[allow(clippy::result_large_err)]
+    pub fn clawback(ctx: Context<Clawback>) -> Result<()> {
+        handle_clawback(ctx)
+    }
 }

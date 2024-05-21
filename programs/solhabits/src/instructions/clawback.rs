@@ -58,9 +58,8 @@ pub struct ClawbackEvent {
 
 /// Anyone can do a clawback once the deadline has long passed
 #[allow(clippy::result_large_err)]
-pub fn handle_cast_judgement(
-    ctx: Context<CastJudgement>,
-    result: bool,
+pub fn handle_clawback(
+    ctx: Context<Clawback>
 ) -> Result<()> {
 
     // Need to access the habit state
@@ -120,7 +119,7 @@ pub fn handle_cast_judgement(
 
 
     // Emit an event
-    emit!(habit.to_success {
+    emit!(ClawbackEvent {
         habit: ctx.accounts.habit.key(),
         creator: ctx.accounts.habit.creator,
     });
