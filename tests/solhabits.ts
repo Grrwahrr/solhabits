@@ -5,18 +5,18 @@ import {
   getOrCreateAssociatedTokenAccount,
   mintTo,
   TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID, Account, getAssociatedTokenAddress,
+  ASSOCIATED_TOKEN_PROGRAM_ID, Account, getAssociatedTokenAddress, getAccount,
 } from "@solana/spl-token";
 import { Solhabits } from "../target/types/solhabits";
 import {deriveHabit} from "./pda";
 import {castJudgement, newHabit} from "./instruction";
-import { expect } from "chai";
+import {assert, expect} from "chai";
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function wait(program, secs: number) {
+async function wait(program: Program<Solhabits>, secs: number) {
   let currentSlot = await program.provider.connection.getSlot();
   let currentBlockTime = await program.provider.connection.getBlockTime(currentSlot);
   let waitUntil = currentBlockTime + secs;
@@ -29,6 +29,11 @@ async function wait(program, secs: number) {
     }
     await sleep(1000);
   }
+}
+
+async function getTokenBalance(program: Program<Solhabits>, account: anchor.web3.PublicKey){
+  const accountInfo = await getAccount(program.provider.connection, account);
+  return accountInfo.amount;
 }
 
 describe("solhabits", () => {
@@ -100,12 +105,20 @@ describe("solhabits", () => {
     // Have to wait here until the delay passes
     await wait(program, 2);
 
+    const bobTokenBalanceBefore = await getTokenBalance(program, bobATA.address);
+
     let habitOneFails = await castJudgement(program, accAlice, bobHabit1, mintAccount, bobATA.address, vaultATA, true, "A raw constraint was violated");
 
     let habitOne = await castJudgement(program, accCharlie, bobHabit1, mintAccount, bobATA.address, vaultATA, true, "");
     console.log(habitOne);
     expect(habitOne).to.not.be.undefined;
     expect(habitOne.outcome).to.be.true;
+
+    const bobTokenBalanceAfter = await getTokenBalance(program, bobATA.address);
+    assert(bobTokenBalanceAfter > bobTokenBalanceBefore, 'Bob should now have more tokens');
+
+    const vaultTokenBalanceAfter = await getTokenBalance(program, vaultATA);
+    assert(vaultTokenBalanceAfter == 0n, 'Bob should now have more tokens');
   });
 
   //TODO negative tests
