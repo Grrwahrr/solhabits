@@ -5,7 +5,7 @@ pub mod errors;
 pub mod instructions;
 pub mod state;
 
-declare_id!("A13TtrbKcEQhHfwPnWgkYVJVrX4j9LH2qLL5A6ttf1EP");
+declare_id!("EXjASzTRvsYBng4TcDKw7xwCPd8KZvAPQgRKqwWUGVpa");
 
 #[program]
 pub mod solhabits {
