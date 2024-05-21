@@ -1,18 +1,19 @@
 use anchor_lang::{
-    context::Context, prelude::{Pubkey, *}, system_program::System, Accounts,
-    Key, Result
+    context::Context,
+    prelude::{Pubkey, *},
+    system_program::System,
+    Accounts, Key, Result,
 };
 use anchor_spl::associated_token::get_associated_token_address;
 use anchor_spl::token_interface::{
     transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked,
 };
 
-use crate::state::habit::Habit;
 use crate::errors::ErrorCode;
+use crate::state::habit::Habit;
 
 #[derive(Accounts)]
 pub struct Clawback<'info> {
-
     /// Transaction sender
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -58,20 +59,24 @@ pub struct ClawbackEvent {
 
 /// Anyone can do a clawback once the deadline has long passed
 #[allow(clippy::result_large_err)]
-pub fn handle_clawback(
-    ctx: Context<Clawback>
-) -> Result<()> {
-
+pub fn handle_clawback(ctx: Context<Clawback>) -> Result<()> {
     // Need to access the habit state
     let habit = &mut ctx.accounts.habit;
 
     // Deadline must have passed
     let curr_ts = Clock::get()?.unix_timestamp as u64;
-    require!(habit.deadline + 604800 <= curr_ts, ErrorCode::DeadlineNotPassed);
+    require!(
+        habit.deadline + 604800 <= curr_ts,
+        ErrorCode::DeadlineNotPassed
+    );
 
     // Make sure the destination address is correct
-    let destination_ata = get_associated_token_address(&habit.to_success, &ctx.accounts.token_mint.key());
-    require!(destination_ata == ctx.accounts.token_destination.key(), ErrorCode::WrongTokenAccount);
+    let destination_ata =
+        get_associated_token_address(&habit.to_success, &ctx.accounts.token_mint.key());
+    require!(
+        destination_ata == ctx.accounts.token_destination.key(),
+        ErrorCode::WrongTokenAccount
+    );
 
     //TODO should the ATA be made here or bundled by FE ?
     // if ctx.accounts.token_destination.lamports() == 0 {
@@ -109,14 +114,14 @@ pub fn handle_clawback(
                 mint: ctx.accounts.token_mint.to_account_info(),
                 authority: ctx.accounts.habit.to_account_info(),
             },
-        ).with_signer(&[&seeds[..]]),
+        )
+        .with_signer(&[&seeds[..]]),
         ctx.accounts.token_vault.amount,
         ctx.accounts.token_mint.decimals,
     )?;
 
     // Close token vault account if possible
     //TODO
-
 
     // Emit an event
     emit!(ClawbackEvent {
